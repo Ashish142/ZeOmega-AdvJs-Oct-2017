@@ -1,5 +1,5 @@
 var products = [
-	{id : 6, name : 'Pen', cost : 40, units : 50, category : 'stationary'},
+	{id : 6, name : 'Pen', cost : 40, units : 50, category : 'utils'},
 	{id : 3, name : 'Len', cost : 60, units : 30, category : 'grocery'},
 	{id : 8, name : 'Den', cost : 30, units : 70, category : 'stationary'},
 	{id : 7, name : 'Ten', cost : 80, units : 60, category : 'grocery'},
@@ -10,6 +10,14 @@ function describe(title, fn){
 	console.group(title);
 	fn();
 	console.groupEnd();
+}
+
+function describeGroup(groupedObj){
+	for(var key in groupedObj){
+		describe('Key - [' + key + ']', function(){
+			console.table(groupedObj[key]);
+		});
+	}
 }
 //Sort
 //Filter
@@ -34,7 +42,12 @@ describe('Sort', function(){
 		console.table(products);
 	});
 
-	function sort(list, comparer){
+	function getDescending(comparerFn){
+		return function(){
+			return comparerFn.apply(undefined, arguments) * -1;
+		}
+	}
+	function sort(list, comparer, descending){
 		var comparerFn = undefined;
 		if (typeof comparer === 'function')
 			comparerFn = comparer;
@@ -46,6 +59,8 @@ describe('Sort', function(){
 			}
 		}
 		if (!comparerFn) return;
+		if (descending)
+			comparerFn = getDescending(comparerFn);
 		for(var i=0; i < list.length-1; i++)
 			for(var j=i+1; j < list.length; j++)
 				if (comparerFn(list[i], list[j]) > 0){
@@ -69,6 +84,11 @@ describe('Sort', function(){
 			console.table(products);
 		});
 
+		describe('Products by cost descending', function(){
+			sort(products, 'cost', true);
+			console.table(products);
+		});
+
 		describe('Products by units', function(){
 			sort(products, 'units');
 			console.table(products);
@@ -85,15 +105,21 @@ describe('Sort', function(){
 						list[j] = temp;
 					}
 		}*/
+		var productComparerByValue = function(p1, p2){
+			var p1Value = p1.cost * p1.units,
+				p2Value = p2.cost * p2.units;
+			if (p1Value < p2Value) return -1;
+			if (p1Value > p2Value) return 1;
+			return 0;
+		}
 		describe('Products by value [value=cost * units]', function(){
-			var productComparerByValue = function(p1, p2){
-				var p1Value = p1.cost * p1.units,
-					p2Value = p2.cost * p2.units;
-				if (p1Value < p2Value) return -1;
-				if (p1Value > p2Value) return 1;
-				return 0;
-			}
+			
 			sort(products, productComparerByValue);
+			console.table(products);
+		});
+		describe('Products by value [value=cost * units] descending', function(){
+			
+			sort(products, productComparerByValue, true);
 			console.table(products);
 		});
 
@@ -170,7 +196,7 @@ describe('Filter', function(){
 				return !isUnderStockedProduct(product);
 			}*/
 			var isWellStockedProduct = negate(isUnderStockedProduct);
-			
+
 			describe('Understocked products [ units < 50 ]', function(){
 				
 				var understockedProducts = filter(products, isUnderStockedProduct);
@@ -184,6 +210,54 @@ describe('Filter', function(){
 		
 	});
 });
+
+describe('GroupBy', function(){
+
+	describe('Products by category', function(){
+		function groupProductsByCategory(){
+			var result = {};
+			for(var index=0, count = products.length; index < count; index++){
+				var category = products[index].category;
+				if (typeof result[category] === 'undefined')
+					result[category] = [];
+				result[category].push(products[index]);
+			}
+			return result;
+		}
+
+		var productsByCategory = groupProductsByCategory();
+		describeGroup(productsByCategory);
+	});
+	describe('Any list by any key', function(){
+		function groupBy(list, keySelectorFn){
+			var result = {};
+			for(var index=0, count = list.length; index < count; index++){
+				var key = keySelectorFn(list[index]);
+				/*if (typeof result[key] === 'undefined')
+					result[key] = [];*/
+				result[key] = result[key] || [];
+				result[key].push(list[index]);
+			}
+			return result;
+		}
+		describe('Products by category', function(){
+			var categoryKeySelector = function(product){
+				return product.category;
+			};
+			var productsByCategory = groupBy(products, categoryKeySelector);
+			describeGroup(productsByCategory);
+		});
+
+		describe('Products by cost', function(){
+			var costKeySelector = function(product){
+				return product.cost < 50 ? 'affordable' : 'costly';
+			};
+			var productsByCost = groupBy(products, costKeySelector);
+			describeGroup(productsByCost);
+		});
+	});
+});
+
 
 
 
