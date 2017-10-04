@@ -22,7 +22,13 @@ describe('Default List', function(){
 describe('Sort', function(){
 	describe('Default Sorting - [Products by id]', function(){
 		function sortProductsById(){
-
+			for(var i=0; i < products.length-1; i++)
+				for(var j=i+1; j < products.length; j++)
+					if (products[i].id > products[j].id){
+						var temp = products[i];
+						products[i] = products[j];
+						products[j] = temp;
+					}
 		}
 		sortProductsById();
 		console.table(products);
