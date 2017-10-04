@@ -19,6 +19,8 @@ var isPrime = (function(){
 	return isPrime;
 })();
 
+
+
 //cache can be public
 
 
